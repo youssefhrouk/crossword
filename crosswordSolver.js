@@ -6,29 +6,39 @@ function crosswordSolver(Puzzle, words) {
 
     let board = Puzzle.split("\n").map(row => row.split(''));
     let board2 = board.map(row => [...row])
-    const wordStartTracker = {}, wordStartTracker2 = {};
+    const [wordStartTracker, wordStartTracker2] = fileObject(board);
+    console.log(wordStartTracker);
+    placeWords(board, words, wordStartTracker);
+    words.reverse()
+    placeWords(board2, words, wordStartTracker2);
+    const result1 = printPuzzle(board);
+    const result2 = printPuzzle(board2);
+    if (result2 === result1) {
+        console.log(printPuzzle(board));
+    } else {
+        console.log('Error');
+    }
+}
 
-    // Initialize tracker from board
+function fileObject(board) {
+    const wordStartTracker = {}, wordStartTracker2 = {};
     for (let i = 0; i < board.length; i++) {
         for (let j = 0; j < board[0].length; j++) {
             if (!isNaN(board[i][j]) && parseInt(board[i][j]) > 0) {
-                if (parseInt(board[i][j]) > 2)  {
-
-                    console.log("Error"); return
-                }       
                 wordStartTracker[`${i},${j}`] = parseInt(board[i][j]);
                 wordStartTracker2[`${i},${j}`] = parseInt(board[i][j]);
             }
         }
     }
-    console.log(wordStartTracker);
-    placeWords(board, words, wordStartTracker);
-    console.log(printPuzzle(board))
-    // need to create a function which will do the back tracking
+    return [wordStartTracker, wordStartTracker2];
+
 }
 
 function checkerror(emptyPuzzle, words) {
-    const regex = /^[0-9.\n]*$/;
+    if (words.length == 0 || typeof (emptyPuzzle) !== "string" || emptyPuzzle.length === 0 || !Array.isArray(words)) {
+        return true
+    }
+    const regex = /^[0-2.\n]*$/;
     const puzzlerr = !regex.test(emptyPuzzle);
     const wordserr = hasDuplicateWord(words);
     if (puzzlerr || wordserr) {
@@ -36,6 +46,8 @@ function checkerror(emptyPuzzle, words) {
     }
     return false;
 }
+
+
 function hasDuplicateWord(words) {
     const wordCount = {};
     for (const word of words) {
@@ -55,7 +67,7 @@ const canPlaceHorizontally = (board, word, row, col, tracker) => {
     const key = `${row},${col}`;
 
     // If this isn't a valid start position or no more words can start here
-    if ((board[row][col] === '.' && parseInt(board[row][col]) === 0) || tracker[[key]]  === 0) {
+    if ((board[row][col] === '.' && parseInt(board[row][col]) === 0) || tracker[[key]] === 0) {
         return false;
     }
 
@@ -135,29 +147,28 @@ const placeWords = (board, words, tracker, index = 0) => {
     if (index === words.length) return true;
     const word = words[index];
     for (let key in tracker) {
-            // Split the key by comma to get row and column
-            const [row, col] = key.split(',').map(Number); // Convert to numbers
+        // Split the key by comma to get row and column
+        const [row, col] = key.split(',').map(Number); // Convert to numbers
 
-            // Try horizontal placement
-            if (canPlaceHorizontally(board, word, row, col, tracker)) {
-                const state = saveState(board, tracker);
-                placeWordHorizontally(board, word, row, col, tracker);
-                if (placeWords(board, words, tracker, index + 1)) {
-                    return true;
-                }
-                restoreState(board, tracker, state);
+        // Try horizontal placement
+        if (canPlaceHorizontally(board, word, row, col, tracker)) {
+            const state = saveState(board, tracker);
+            placeWordHorizontally(board, word, row, col, tracker);
+            if (placeWords(board, words, tracker, index + 1)) {
+                return true;
             }
+            restoreState(board, tracker, state);
+        }
 
-            // Try vertical placement
-            if (canPlaceVertically(board, word, row, col, tracker)) {
-                const state = saveState(board, tracker);
-                placeWordVertically(board, word, row, col, tracker);
-                if (placeWords(board, words, tracker, index + 1)) {
-                    return true;
-                }
-                restoreState(board, tracker, state);
+        // Try vertical placement
+        if (canPlaceVertically(board, word, row, col, tracker)) {
+            const state = saveState(board, tracker);
+            placeWordVertically(board, word, row, col, tracker);
+            if (placeWords(board, words, tracker, index + 1)) {
+                return true;
             }
-        // }
+            restoreState(board, tracker, state);
+        }
     }
     return false;
 }
@@ -166,27 +177,6 @@ const printPuzzle = board => {
     return board.map(row => row.join('')).join('\n');
 }
 
-const puzzle = `..1.1..1...
-10000..1000
-..0.0..0...
-..1000000..
-..0.0..0...
-1000..10000
-..0.1..0...
-....0..0...
-..100000...
-....0..0...
-....0......`
-const words = [
-  'popcorn',
-  'fruit',
-  'flour',
-  'chicken',
-  'eggs',
-  'vegetables',
-  'pasta',
-  'pork',
-  'steak',
-  'cheese',
-]
+const puzzle = '2001\n0..0\n1000\n0..0'
+const words = ['casa', 'alan', 'ciao', 'anta']
 crosswordSolver(puzzle, words);
