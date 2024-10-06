@@ -5,23 +5,25 @@ function crosswordSolver(Puzzle, words) {
     }
 
     let board = Puzzle.split("\n").map(row => row.split(''));
-    let board2  = board.map(row => [...row])
+    let board2 = board.map(row => [...row])
     const wordStartTracker = {}, wordStartTracker2 = {};
 
     // Initialize tracker from board
     for (let i = 0; i < board.length; i++) {
         for (let j = 0; j < board[0].length; j++) {
             if (!isNaN(board[i][j]) && parseInt(board[i][j]) > 0) {
+                if (parseInt(board[i][j]) > 2)  {
+
+                    console.log("Error"); return
+                }       
                 wordStartTracker[`${i},${j}`] = parseInt(board[i][j]);
                 wordStartTracker2[`${i},${j}`] = parseInt(board[i][j]);
             }
         }
     }
-
     console.log(wordStartTracker);
     placeWords(board, words, wordStartTracker);
     console.log(printPuzzle(board))
-
     // need to create a function which will do the back tracking
 }
 
@@ -51,10 +53,9 @@ const canPlaceHorizontally = (board, word, row, col, tracker) => {
 
     // Check if we can start a word here
     const key = `${row},${col}`;
-    const remainingStarts = tracker[[key]] || 0;
 
     // If this isn't a valid start position or no more words can start here
-    if ((board[row][col] === '.' && parseInt(board[row][col]) === 0) || remainingStarts === 0) {
+    if ((board[row][col] === '.' && parseInt(board[row][col]) === 0) || tracker[[key]]  === 0) {
         return false;
     }
 
@@ -64,7 +65,6 @@ const canPlaceHorizontally = (board, word, row, col, tracker) => {
         if (cell === '.') return false;
         if (isNaN(cell) && cell !== word[i]) return false;
     }
-
     return true;
 }
 
@@ -74,10 +74,9 @@ const canPlaceVertically = (board, word, row, col, tracker) => {
 
     // Check if we can start a word here
     const key = `${row},${col}`;
-    const remainingStarts = tracker[key] || 0;
 
     // If this isn't a valid start position or no more words can start here
-    if ((board[row][col] === '.' && parseInt(board[row][col]) === 0) || remainingStarts === 0) {
+    if ((board[row][col] === '.' && parseInt(board[row][col]) === 0) || tracker[key] === 0) {
         return false;
     }
 
@@ -96,7 +95,6 @@ const placeWordHorizontally = (board, word, row, col, tracker) => {
     if (tracker[key]) {
         tracker[key]--;
     }
-
     // Place the word in the board
     for (let i = 0; i < word.length; i++) {
         board[row][col + i] = word[i];
@@ -127,24 +125,19 @@ const restoreState = (board, tracker, state) => {
     for (let i = 0; i < board.length; i++) {
         board[i] = [...state.board[i]];
     }
-
     Object.keys(tracker).forEach(key => {
         tracker[key] = state.tracker[key];
     });
 }
 
-
 const placeWords = (board, words, tracker, index = 0) => {
     // Base case: all words placed
-    if (index === words.length) {
-        // Check if all positions have used their required number of starts
-        console.log(tracker)
-        return Object.values(tracker).every(count => count === 0);
-    }
-
+    if (index === words.length) return true;
     const word = words[index];
-    for (let row = 0; row < board.length; row++) {
-        for (let col = 0; col < board[0].length; col++) {
+    for (let key in tracker) {
+            // Split the key by comma to get row and column
+            const [row, col] = key.split(',').map(Number); // Convert to numbers
+
             // Try horizontal placement
             if (canPlaceHorizontally(board, word, row, col, tracker)) {
                 const state = saveState(board, tracker);
@@ -164,9 +157,8 @@ const placeWords = (board, words, tracker, index = 0) => {
                 }
                 restoreState(board, tracker, state);
             }
-        }
+        // }
     }
-
     return false;
 }
 
@@ -174,11 +166,27 @@ const printPuzzle = board => {
     return board.map(row => row.join('')).join('\n');
 }
 
-const puzzle = `2001
-0..0
-1000
-0..0`
-const words = ['casa', 'alan', 'ciao', 'anta']
-crosswordSolver(puzzle, words); 
-
-// crosswordSolver(emptyPuzzle, words)
+const puzzle = `..1.1..1...
+10000..1000
+..0.0..0...
+..1000000..
+..0.0..0...
+1000..10000
+..0.1..0...
+....0..0...
+..100000...
+....0..0...
+....0......`
+const words = [
+  'popcorn',
+  'fruit',
+  'flour',
+  'chicken',
+  'eggs',
+  'vegetables',
+  'pasta',
+  'pork',
+  'steak',
+  'cheese',
+]
+crosswordSolver(puzzle, words);
