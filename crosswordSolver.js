@@ -1,69 +1,46 @@
-function crosswordSolver(emptyPuzzle, words) {
-    if (checkerror(emptyPuzzle, words)) {
+function crosswordSolver(Puzzle, words) {
+    if (checkerror(Puzzle, words)) {
         console.log("Error");
         return;
     }
-    let splitedemptyPuzzle = emptyPuzzle.split("\n");
-    const LEN = splitedemptyPuzzle.length;
-    Solving(splitedemptyPuzzle, LEN, words, 0);
-}
-function Solving(Tab, LEN, words, index) {
-    if (index >= words.length) {
-        let tab = [];
-        for (let i = 0; i < LEN; i++) {
-            tab.push(Tab[i]);
-        }
-        if (containsNoNumbers(tab)) {
-            console.log(tab.join("\n"))
-        }
-        return;
+
+    let board = Puzzle.split("\n").map(row => row.split(''));
+    let board2 = board.map(row => [...row])
+    const [wordStartTracker, wordStartTracker2, acc] = fileObject(board);
+    if (acc !== words.length) {
+        console.log('Error');
+        return
     }
-    const word = words[index];
-    for (let i = 0; i < LEN; i++) {
-        for (let j = 0; j < Tab[i].length; j++) {
-            if (CanPlaceH(i, j, Tab, word)) {
-                const Ntab = Place(i, j, Tab, word, "Horizontal");
-                if (Solving(Ntab, LEN, words, index + 1)) {
-                    return true; // Return true if a valid solution is found
-                }
+    placeWords(board, words, wordStartTracker);
+    if (!Object.values(wordStartTracker).every(count => count === 0)) {
+        console.log('Error');
+        return
+    }
+    words.reverse()
+    placeWords(board2, words, wordStartTracker2);
+    const result1 = printPuzzle(board);
+    const result2 = printPuzzle(board2);
+    if (result2 === result1) {
+        console.log(printPuzzle(board));
+    } else {
+        console.log('Error');
+    }
+}
+
+function fileObject(board) {
+    const wordStartTracker = {}, wordStartTracker2 = {};
+    let acc = 0
+    for (let i = 0; i < board.length; i++) {
+        for (let j = 0; j < board[0].length; j++) {
+            if (!isNaN(board[i][j]) && parseInt(board[i][j]) > 0) {
+                acc += parseInt(board[i][j])
+                wordStartTracker[`${i},${j}`] = parseInt(board[i][j]);
+                wordStartTracker2[`${i},${j}`] = parseInt(board[i][j]);
             }
-            if (CanPlaceV(i, j, Tab, word)) {
-                const Ntab = Place(i, j, Tab, word, "Vertical");
-                Solving(Ntab, LEN, words, index + 1);
-            }
         }
     }
-}
-function CanPlaceV(x, y, grid, word) {
-    const len = word.length;
-    for (let i = 0; i < len; i++) {
-        if (x + i >= grid.length || (!/\d/.test(grid[x + i][y]) && grid[x + i][y] !== word[i])) {
-            return false;
-        }
-    }
-    return true;
-}
-function CanPlaceH(x, y, grid, word) {
-    const len = word.length;
-    for (let i = 0; i < len; i++) {
-        if (y + i >= grid[x].length || (!/\d/.test(grid[x][y + i]) && grid[x][y + i] !== word[i])) {
-            return false;
-        }
-    }
-    return true;
-}
-function Place(row, col, Tab, word, direction) {
-    const Ntab = [...Tab];
-    if (direction === "Vertical") {
-        for (let i = 0; i < word.length; i++) {
-            Ntab[row + i] = Ntab[row + i].slice(0, col) + word[i] + Ntab[row + i].slice(col + 1);
-        }
-    } else if (direction === "Horizontal") {
-        for (let i = 0; i < word.length; i++) {
-            Ntab[row] = Ntab[row].slice(0, col) + word + Ntab[row].slice(col + word.length);
-        }
-    }
-    return Ntab;
+    return [wordStartTracker, wordStartTracker2, acc];
+
 }
 
 function checkerror(emptyPuzzle, words) {
@@ -78,6 +55,8 @@ function checkerror(emptyPuzzle, words) {
     }
     return false;
 }
+
+
 function hasDuplicateWord(words) {
     const wordCount = {};
     for (const word of words) {
@@ -88,17 +67,112 @@ function hasDuplicateWord(words) {
     }
     return false;
 }
-function containsNoNumbers(tab) {
-    // Join the array into a string
-    const joinedString = tab.join();
 
-    // Check if the string contains any numbers using a regular expression
-    return !/\d/.test(joinedString);
+const canPlaceHorizontally = (board, word, row, col, tracker) => {
+    // Check if we can start a word here
+    const key = `${row},${col}`;
+    if (tracker[key] === 0) {
+        return false
+    }
+    const len = word.length;
+    for (let i = 0; i < len; i++) {
+        if (col + i >= board[0].length || (!/\d/.test(board[row][col + i]) && board[row][col + i] !== word[i])) {
+            return false;
+        }
+    }
+    return true;
 }
-const emptyPuzzle = `2001
-0..0
-1000
-0..0`
-const words = ['casa', 'alan', 'ciao', 'anta']
 
-crosswordSolver(emptyPuzzle, words)
+const canPlaceVertically = (board, word, row, col, tracker) => {
+    const key = `${row},${col}`;
+    if (tracker[key] === 0) {
+        return false
+    }
+    const len = word.length;
+    for (let i = 0; i < len; i++) {
+        if (row + i >= board.length || (!/\d/.test(board[row + i][col]) && board[row + i][col] !== word[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+const placeWordHorizontally = (board, word, row, col, tracker) => {
+    // Decrement the word start counter for this position
+    const key = `${row},${col}`;
+    if (tracker[key]) {
+        tracker[key]--;
+    }
+    // Place the word in the board
+    for (let i = 0; i < word.length; i++) {
+        board[row][col + i] = word[i];
+    }
+}
+
+const placeWordVertically = (board, word, row, col, tracker) => {
+    // Decrement the word start counter for this position
+    const key = `${row},${col}`;
+    if (tracker[key]) {
+        tracker[key]--;
+    }
+    // Place the word in the board
+    for (let i = 0; i < word.length; i++) {
+        board[row + i][col] = word[i];
+    }
+}
+
+const saveState = (board, tracker) => {
+    return {
+        board: board.map(row => [...row]),
+        tracker: { ...tracker }
+    };
+}
+
+const restoreState = (board, tracker, state) => {
+    // Restore board
+    for (let i = 0; i < board.length; i++) {
+        board[i] = [...state.board[i]];
+    }
+    Object.keys(tracker).forEach(key => {
+        tracker[key] = state.tracker[key];
+    });
+}
+
+const placeWords = (board, words, tracker, index = 0) => {
+    // Base case: all words placed
+    if (index === words.length) return true;
+    const word = words[index];
+    for (let key in tracker) {
+        // Split the key by comma to get row and column
+        const [row, col] = key.split(',').map(Number); // Convert to numbers
+
+        // Try horizontal placement
+        if (canPlaceHorizontally(board, word, row, col, tracker)) {
+            const state = saveState(board, tracker);
+            placeWordHorizontally(board, word, row, col, tracker);
+            if (placeWords(board, words, tracker, index + 1)) {
+                return true;
+            }
+            restoreState(board, tracker, state);
+        }
+
+        // Try vertical placement
+        if (canPlaceVertically(board, word, row, col, tracker)) {
+            const state = saveState(board, tracker);
+            placeWordVertically(board, word, row, col, tracker);
+            if (placeWords(board, words, tracker, index + 1)) {
+                return true;
+            }
+            restoreState(board, tracker, state);
+        }
+    }
+    return false;
+}
+
+const printPuzzle = board => {
+    return board.map(row => row.join('')).join('\n');
+}
+
+const puzzle = '2001\n0..0\n1000\n0..0'
+const words = ['casa', 'alan', 'ciao', 'anta']
+crosswordSolver(puzzle, words)
