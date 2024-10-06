@@ -21,7 +21,7 @@ function crosswordSolver(Puzzle, words) {
     const result1 = printPuzzle(board);
     const result2 = printPuzzle(board2);
     if (result2 === result1) {
-    console.log(printPuzzle(board));
+        console.log(printPuzzle(board));
     } else {
         console.log('Error');
     }
@@ -90,7 +90,7 @@ const canPlaceVertically = (board, word, row, col, tracker) => {
     }
     const len = word.length;
     for (let i = 0; i < len; i++) {
-        if (row + i >= board.length || (!/\d/.test(board[row+i][col]) && board[row + i][col] !== word[i])) {
+        if (row + i >= board.length || (!/\d/.test(board[row + i][col]) && board[row + i][col] !== word[i])) {
             return false;
         }
     }
