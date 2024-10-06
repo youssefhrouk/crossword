@@ -6,15 +6,22 @@ function crosswordSolver(Puzzle, words) {
 
     let board = Puzzle.split("\n").map(row => row.split(''));
     let board2 = board.map(row => [...row])
-    const [wordStartTracker, wordStartTracker2] = fileObject(board);
-    console.log(wordStartTracker);
+    const [wordStartTracker, wordStartTracker2, acc] = fileObject(board);
+    if (acc !== words.length) {
+        console.log('Error');
+        return
+    }
     placeWords(board, words, wordStartTracker);
+    if (!Object.values(wordStartTracker).every(count => count === 0)) {
+        console.log('Error');
+        return
+    }
     words.reverse()
     placeWords(board2, words, wordStartTracker2);
     const result1 = printPuzzle(board);
     const result2 = printPuzzle(board2);
     if (result2 === result1) {
-        console.log(printPuzzle(board));
+    console.log(printPuzzle(board));
     } else {
         console.log('Error');
     }
@@ -22,15 +29,17 @@ function crosswordSolver(Puzzle, words) {
 
 function fileObject(board) {
     const wordStartTracker = {}, wordStartTracker2 = {};
+    let acc = 0
     for (let i = 0; i < board.length; i++) {
         for (let j = 0; j < board[0].length; j++) {
             if (!isNaN(board[i][j]) && parseInt(board[i][j]) > 0) {
+                acc += parseInt(board[i][j])
                 wordStartTracker[`${i},${j}`] = parseInt(board[i][j]);
                 wordStartTracker2[`${i},${j}`] = parseInt(board[i][j]);
             }
         }
     }
-    return [wordStartTracker, wordStartTracker2];
+    return [wordStartTracker, wordStartTracker2, acc];
 
 }
 
@@ -60,43 +69,30 @@ function hasDuplicateWord(words) {
 }
 
 const canPlaceHorizontally = (board, word, row, col, tracker) => {
-    // Check if word fits within board
-    if (col + word.length > board[0].length) return false;
-
     // Check if we can start a word here
     const key = `${row},${col}`;
-
-    // If this isn't a valid start position or no more words can start here
-    if ((board[row][col] === '.' && parseInt(board[row][col]) === 0) || tracker[[key]] === 0) {
-        return false;
+    if (tracker[key] === 0) {
+        return false
     }
-
-    // Check for conflicts with existing letters and dots
-    for (let i = 0; i < word.length; i++) {
-        const cell = board[row][col + i];
-        if (cell === '.') return false;
-        if (isNaN(cell) && cell !== word[i]) return false;
+    const len = word.length;
+    for (let i = 0; i < len; i++) {
+        if (col + i >= board[0].length || (!/\d/.test(board[row][col + i]) && board[row][col + i] !== word[i])) {
+            return false;
+        }
     }
     return true;
 }
 
 const canPlaceVertically = (board, word, row, col, tracker) => {
-    // Check if word fits within board
-    if (row + word.length > board.length) return false;
-
-    // Check if we can start a word here
     const key = `${row},${col}`;
-
-    // If this isn't a valid start position or no more words can start here
-    if ((board[row][col] === '.' && parseInt(board[row][col]) === 0) || tracker[key] === 0) {
-        return false;
+    if (tracker[key] === 0) {
+        return false
     }
-
-    // Check for conflicts with existing letters and dots
-    for (let i = 0; i < word.length; i++) {
-        const cell = board[row + i][col];
-        if (cell === '.') return false;
-        if (isNaN(cell) && cell !== word[i]) return false;
+    const len = word.length;
+    for (let i = 0; i < len; i++) {
+        if (row + i >= board.length || (!/\d/.test(board[row+i][col]) && board[row + i][col] !== word[i])) {
+            return false;
+        }
     }
     return true;
 }
@@ -179,4 +175,4 @@ const printPuzzle = board => {
 
 const puzzle = '2001\n0..0\n1000\n0..0'
 const words = ['casa', 'alan', 'ciao', 'anta']
-crosswordSolver(puzzle, words);
+crosswordSolver(puzzle, words)
